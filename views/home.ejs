@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>
+    <%= pageTitle %>
+  </title>
+  <!-- Add Bootstrap CSS -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css"
+    crossorigin="anonymous">
+  <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet"
+    crossorigin="anonymous">
+</head>
+
+<body>
+  <nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <a class="navbar-brand" href="/">My App</a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
+      aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav">
+        <li class="nav-item <%= active === 'home' ? 'active' : '' %>">
+          <a class="nav-link" href="/">Home</a>
+        </li>
+        <li class="nav-item <%= active === 'urls' ? 'active' : '' %>">
+          <a class="nav-link" href="/urls">URLs</a>
+        </li>
+      </ul>
+    </div>
+  </nav>
+  <div class="container">
+    <div class="d-flex justify-content-between mb-3">
+      <div id="btns" class="d-flex">
+        <input type="text" class="form-control mr-2" id="exampleInput" placeholder="Enter URL" oninput="checkInput()">
+        <button type="button" class="btn btn-primary mr-2" id="importBtn" disabled
+          onclick="sendRequest()">Generate</button>
+        <input type="text" class="form-control" id="qrnameinput" placeholder="Enter QR Name" oninput="checkQRInput()">
+      </div>
+    </div>
+
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Original URL</th>
+          <th>Short URL</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% let serialNumber=(currentPage - 1) * limit + 1; %>
+          <% data.forEach(url=> { %>
+            <tr>
+              <td>
+                <%= serialNumber++ %>
+              </td>
+              <td>
+                <%= url.originalUrl %>
+              </td>
+              <td>https://bysa.ma/<%= url.shortUrl %>
+              </td>
+              <td>
+                <% const base64QrCode=url.qrCode.toString('base64'); %>
+                  <button type="button" class="btn btn-sm btn-primary download-btn" disabled
+                    onclick="openInNewTab('<%= base64QrCode %>')">
+                    <i class="fas fa-download"></i> Download QR Code
+                  </button>
+              </td>
+            </tr>
+            <% }) %>
+      </tbody>
+    </table>
+
+    <!-- Pagination -->
+    <!-- Pagination -->
+    <nav>
+      <ul class="pagination">
+        <li class="page-item <%= currentPage === 1 ? 'disabled' : '' %>">
+          <a class="page-link" href="/urls?page=1&limit=<%= limit %>" tabindex="-1">First</a>
+        </li>
+        <li class="page-item <%= currentPage === 1 ? 'disabled' : '' %>">
+          <a class="page-link" href="/urls?page=<%= currentPage - 1 %>&limit=<%= limit %>" tabindex="-1">Previous</a>
+        </li>
+        <% let startPage=Math.max(1, currentPage - 2); let endPage=Math.min(totalPages, startPage + 4);
+          startPage=Math.max(1, endPage - 4); for (let i=startPage; i <=endPage; i++) { %>
+          <li class="page-item <%= currentPage === i ? 'active' : '' %>">
+            <a class="page-link" href="/urls?page=<%= i %>&limit=<%= limit %>">
+              <%= i %>
+            </a>
+          </li>
+          <% } %>
+            <li class="page-item <%= currentPage === totalPages ? 'disabled' : '' %>">
+              <a class="page-link" href="/urls?page=<%= currentPage + 1 %>&limit=<%= limit %>">Next</a>
+            </li>
+            <li class="page-item <%= currentPage === totalPages ? 'disabled' : '' %>">
+              <a class="page-link" href="/urls?page=<%= totalPages %>&limit=<%= limit %>">Last</a>
+            </li>
+      </ul>
+    </nav>
+
+  </div>
+  <!-- Add jQuery and Bootstrap JS -->
+  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"
+    crossorigin="anonymous"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js" crossorigin="anonymous"></script>
+
+  <script>
+
+    async function exportData() {
+      const myButton = document.getElementById("exportBtn");
+      myButton.disabled = true;
+      const dropdown = document.getElementById("filenameSelect");
+      const selectedOption = dropdown.value;
+      const response = await fetch('/export/' + selectedOption);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'excel-and-qrcodes.zip';
+      a.click();
+      window.URL.revokeObjectURL(url);
+      myButton.disabled = false;
+    }
+
+  </script>
+  <script>
+    function checkInput() {
+      var inputField = document.getElementById('exampleInput');
+      var generateBtn = document.getElementById('importBtn');
+
+      if (inputField.value.trim() !== '') {
+        generateBtn.disabled = false;
+      } else {
+        generateBtn.disabled = true;
+      }
+    }
+
+    function sendRequest() {
+      var inputField = document.getElementById('exampleInput');
+      var inputValue = inputField.value.trim();
+
+      var data = { url: inputValue };
+
+      // Make an API request here with the 'data' variable as your JSON payload
+      // You can use XMLHttpRequest, fetch, or any other method to send the request
+
+      // Example using fetch:
+      fetch('/single/url', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+      })
+        .then(response => {
+          // Handle the response from the API
+          alert('url created!!');
+          window.location.href = `/?page=1&limit=10`
+        })
+        .catch(error => {
+          // Handle any error that occurred during the request
+          console.error(error);
+        });
+    }
+
+
+    function checkQRInput() {
+      var inputField = document.getElementById('qrnameinput');
+      var buttons = document.querySelectorAll('.download-btn');
+
+
+      if (inputField.value.trim() !== '') {
+        buttons.forEach(function (button) {
+          button.disabled = false;
+        });
+      } else {
+        buttons.forEach(function (button) {
+          button.disabled = true;
+        });
+      }
+    }
+
+    function openInNewTab(base64String) {
+      var downloadLink = document.createElement('a');
+      downloadLink.href = 'data:image/png;base64,' + base64String;
+      downloadLink.target = '_blank';
+      downloadLink.download = document.getElementById('qrnameinput').value + '.png';
+
+      // Append the link to the document body and simulate a click
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
+    }
+
+  </script>
+
+</body>
+
+</html>

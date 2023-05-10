@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>
+    <%= pageTitle %>
+  </title>
+  <!-- Add Bootstrap CSS -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css"
+    crossorigin="anonymous">
+  <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet"
+    crossorigin="anonymous">
+</head>
+
+<body>
+  <!-- Import Modal -->
+  <div class="modal fade" id="importModal" tabindex="-1" role="dialog" aria-labelledby="importModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="importModalLabel">Import Excel File</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <form id="importForm">
+            <div class="form-group">
+              <label for="excelFile">Upload Excel File</label>
+              <input type="file" class="form-control-file" id="excelFile" name="excelFile" accept=".xlsx, .xls">
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-primary" id="submitImport">Submit</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <a class="navbar-brand" href="/">My App</a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
+      aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav">
+        <li class="nav-item <%= active === 'home' ? 'active' : '' %>">
+          <a class="nav-link" href="/">Home</a>
+        </li>
+        <li class="nav-item <%= active === 'urls' ? 'active' : '' %>">
+          <a class="nav-link" href="/urls">URLs</a>
+        </li>
+      </ul>
+    </div>
+  </nav>
+  <div class="container">
+    <div class="d-flex justify-content-between mb-3">
+      <div id="btns">
+        <button type="button" class="btn btn-primary" id="importBtn">Import</button>
+        <button type="button" class="btn btn-success" id="exportBtn" onclick="exportData()">Export</button>
+      </div>
+    </div>
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Doc No.</th>
+          <th>Original URL</th>
+          <th>Short URL</th>
+          <th>File Name</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% let serialNumber=(currentPage - 1) * limit + 1; %>
+          <% data.forEach(url=> { %>
+            <tr>
+              <td>
+                <%= serialNumber++ %>
+              </td>
+              <td>
+                <%= url.sno %>
+              </td>
+              <td>
+                <%= url.originalUrl %>
+              </td>
+              <td>https://bysa.ma/<%= url.shortUrl %>
+              </td>
+              <td>
+                <%= url.filename %>
+              </td>
+              <td>
+                <% const base64QrCode=url.qrCode.toString('base64'); %>
+                  <!-- <a href="data:image/png;base64,<%= base64QrCode %>" download="qr_code_<%= serialNumber - 1 %>.png" -->
+                  <a href="data:image/png;base64,<%= base64QrCode %>" download="<%=url.sno%>.png"
+                    class="btn btn-sm btn-primary">
+                    <i class="fas fa-download"></i> Download QR Code
+                  </a>
+              </td>
+            </tr>
+            <% }) %>
+      </tbody>
+    </table>
+
+    <!-- Pagination -->
+    <!-- Pagination -->
+    <nav>
+      <ul class="pagination">
+        <li class="page-item <%= currentPage === 1 ? 'disabled' : '' %>">
+          <a class="page-link" href="/urls?page=1&limit=<%= limit %>" tabindex="-1">First</a>
+        </li>
+        <li class="page-item <%= currentPage === 1 ? 'disabled' : '' %>">
+          <a class="page-link" href="/urls?page=<%= currentPage - 1 %>&limit=<%= limit %>" tabindex="-1">Previous</a>
+        </li>
+        <% let startPage=Math.max(1, currentPage - 2); let endPage=Math.min(totalPages, startPage + 4);
+          startPage=Math.max(1, endPage - 4); for (let i=startPage; i <=endPage; i++) { %>
+          <li class="page-item <%= currentPage === i ? 'active' : '' %>">
+            <a class="page-link" href="/urls?page=<%= i %>&limit=<%= limit %>">
+              <%= i %>
+            </a>
+          </li>
+          <% } %>
+            <li class="page-item <%= currentPage === totalPages ? 'disabled' : '' %>">
+              <a class="page-link" href="/urls?page=<%= currentPage + 1 %>&limit=<%= limit %>">Next</a>
+            </li>
+            <li class="page-item <%= currentPage === totalPages ? 'disabled' : '' %>">
+              <a class="page-link" href="/urls?page=<%= totalPages %>&limit=<%= limit %>">Last</a>
+            </li>
+      </ul>
+    </nav>
+
+  </div>
+  <!-- Add jQuery and Bootstrap JS -->
+  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"
+    crossorigin="anonymous"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js" crossorigin="anonymous"></script>
+  <script>
+    // Add click event listeners for the import and export buttons
+    $(document).ready(function () {
+      $('#importBtn').on('click', function () {
+        // Your import functionality
+        console.log('Import button clicked');
+      });
+
+      $('#exportBtn').on('click', function () {
+        // Your export functionality
+        console.log('Export button clicked');
+      });
+    });
+  </script>
+
+  <script>
+    // Add click event listeners for the import and export buttons
+    $(document).ready(function () {
+      $('#importBtn').on('click', function () {
+        // Open the Import Modal
+        $('#importModal').modal('show');
+      });
+
+      $('#exportBtn').on('click', function () {
+        // Your export functionality
+        console.log('Export button clicked');
+      });
+
+      // Handle form submission
+      $('#submitImport').on('click', async function () {
+        const fileInput = $('#excelFile')[0];
+        if (fileInput.files.length === 0) {
+          alert('Please select an Excel file to upload.');
+          return;
+        }
+
+        const formData = new FormData();
+        formData.append('file', fileInput.files[0]);
+
+        try {
+          const response = await fetch('/upload', {
+            method: 'POST',
+            body: formData
+          });
+          console.log(response)
+          if (response.ok) {
+            alert('File uploaded successfully');
+            location.reload();
+            // Refresh data, if necessary
+          } else {
+            alert('An error occurred while uploading the file');
+          }
+        } catch (error) {
+          console.error('Error:', error);
+          alert('An error occurred while uploading the file');
+        }
+
+        // Close the Import Modal
+        $('#importModal').modal('hide');
+      });
+    });
+
+    const selectElement = document.createElement('select');
+    selectElement.id = 'filenameSelect';
+    selectElement.classList.add('form-select');
+    selectElement.addEventListener('change', () => {
+      const selectedOption = selectElement.options[selectElement.selectedIndex].value;
+      window.location.href = `/urls?page=1&limit=10&filename=${selectedOption}`;
+    });
+
+    fetch('/files')
+      .then(response => response.json())
+      .then(filenames => {
+        const queryString = window.location.search;
+        const urlParams = new URLSearchParams(queryString);
+        const selectedFilename = urlParams.get('filename');
+        const optionElement = document.createElement('option');
+        optionElement.value = "all";
+        optionElement.textContent = "all";
+        if (!selectedFilename || selectedFilename == "all") {
+          optionElement.setAttribute('selected', 'selected');
+        }
+        selectElement.appendChild(optionElement);
+        filenames.forEach(filename => {
+          const optionElement = document.createElement('option');
+          optionElement.value = filename;
+          optionElement.textContent = filename;
+          if (filename === selectedFilename) {
+            optionElement.setAttribute('selected', 'selected');
+          }
+          selectElement.appendChild(optionElement);
+        });
+        const containerElement = document.getElementById('btns');
+        containerElement.appendChild(selectElement);
+      })
+      .catch(error => console.error(error));
+
+
+    async function exportData() {
+      const myButton = document.getElementById("exportBtn");
+      myButton.disabled = true;
+      const dropdown = document.getElementById("filenameSelect");
+      const selectedOption = dropdown.value;
+      const response = await fetch('/export/' + selectedOption);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'excel-and-qrcodes.zip';
+      a.click();
+      window.URL.revokeObjectURL(url);
+      myButton.disabled = false;
+    }
+
+  </script>
+
+</body>
+
+</html>
