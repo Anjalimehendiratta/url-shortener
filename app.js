@@ -28,6 +28,8 @@ app.use(express.json());
 app.set('view engine', 'ejs');
 
 
+
+
 app.get('/', async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
@@ -185,9 +187,36 @@ async function generateQRCode(url) {
 
 
 
+app.get('/notfound', async(req,res) => {
+    res.render('notfound')
+})
 
+app.get('/:shortUrl', async (req, res) => {
+    try {
+        let shortUrl = req.params.shortUrl
+        if(req.params.shortUrl){
+            let redirectLink = await UrlModel.findOne({shortUrl}).lean();
+            if(!redirectLink){
+                redirectLink = await SingleUrlModel.findOne({shortUrl}).lean();
+            }
+            if(redirectLink){
+                if(redirectLink.originalUrl.includes('http')){
+                    res.redirect(redirectLink.originalUrl);
+                }
+                else{
+                res.redirect('https://'+redirectLink.originalUrl);
+                }
+                return
+            }
+        }
 
-
+        res.redirect('/notfound')
+        return
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Internal server error');
+    }
+});
 
 
 
