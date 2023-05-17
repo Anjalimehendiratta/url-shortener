@@ -26,7 +26,7 @@ const urlsQueue = new Queue('urls', {
 
 app.use(express.json());
 app.set('view engine', 'ejs');
-
+app.use('/.well-known/acme-challenge/', express.static(__dirname + '/public'));
 
 
 
