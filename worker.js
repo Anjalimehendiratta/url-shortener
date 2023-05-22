@@ -42,7 +42,7 @@ urlsQueue.process(async (job) => {
     while (startIndex < urls.length) {
         const endIndex = Math.min(startIndex + CHUNK_SIZE, urls.length);
         const chunk = urls.slice(startIndex, endIndex);
-        await processingQueue.add({ urls: chunk, filename: job.data.filename });
+        await processingQueue.add({ urls: chunk, filename: job.data.filename, userId: job.data.userId });
         startIndex += CHUNK_SIZE;
     }
 });
@@ -51,6 +51,7 @@ urlsQueue.process(async (job) => {
 processingQueue.process(async (job) => {
     const urls = job.data.urls;
     let filename = job.data.filename;
+    let userId = job.data.userId
     console.log(`Processing chunk of ${urls.length} URLs`);
     const promises = urls.map(async (url) => {
         if(url[1]){
@@ -63,7 +64,7 @@ processingQueue.process(async (job) => {
             }
 
             const qrCode = await generateQRCode(url[1]);
-            await UrlModel.create({ originalUrl: url[1], sno: url[0], shortUrl, qrCode, filename });
+            await UrlModel.create({ originalUrl: url[1], sno: url[0], shortUrl, qrCode, filename , userId});
         }
     });
     await Promise.all(promises);

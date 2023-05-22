@@ -5,7 +5,8 @@ const UrlSchema = new mongoose.Schema({
   shortUrl: String,
   qrCode: Buffer,
   filename: String,
-  sno: String
+  sno: String,
+  userId: String
 });
 
 const UrlModel = mongoose.model('Url', UrlSchema);
